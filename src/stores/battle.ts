@@ -1,5 +1,6 @@
-import { ref, computed } from 'vue'
+import type { Pokemon } from '@/types/pokemon'
 import { defineStore } from 'pinia'
+import { computed, ref, type Ref } from 'vue'
 
 export const useBattleStore = defineStore('battle', () => {
   // my pokemons
@@ -11,10 +12,10 @@ export const useBattleStore = defineStore('battle', () => {
   const attacker = ref(true)
 
   // attack function
-  const attackPokemon = (pokemonAttack: any, pokemonDefense: any) => {
+  const attackPokemon = (pokemonAttack: Ref<Pokemon[]>, pokemonDefense: Ref<Pokemon[]>) => {
     // tolerate both: refs passed from script (have `.value`) and unwrapped arrays passed from templates
-    const attackArr = pokemonAttack && pokemonAttack.value ? pokemonAttack.value : pokemonAttack
-    const defendArr = pokemonDefense && pokemonDefense.value ? pokemonDefense.value : pokemonDefense
+    const attackArr: Pokemon[] = pokemonAttack && pokemonAttack.value ? pokemonAttack.value : pokemonAttack as unknown as Pokemon[]
+    const defendArr: Pokemon[] = pokemonDefense && pokemonDefense.value ? pokemonDefense.value : pokemonDefense as unknown as Pokemon[]
 
     // validate
     if (!attackArr || !defendArr || !attackArr[0] || !defendArr[0]) return
@@ -42,12 +43,16 @@ export const useBattleStore = defineStore('battle', () => {
   }
 
   const gameOver = computed(() => {
-    return pokemons.value[0].hp <= 0 || opponentPokemons.value[0].hp <= 0
+    const myHp = pokemons.value[0]?.hp ?? 1
+    const oppHp = opponentPokemons.value[0]?.hp ?? 1
+    return myHp <= 0 || oppHp <= 0
   })
 
   const winner = computed(() => {
-    if (pokemons.value[0].hp <= 0) return 'opponent'
-    if (opponentPokemons.value[0].hp <= 0) return 'player'
+    const myHp = pokemons.value[0]?.hp ?? 1
+    const oppHp = opponentPokemons.value[0]?.hp ?? 1
+    if (myHp <= 0) return 'opponent'
+    if (oppHp <= 0) return 'player'
     return null
   })
 

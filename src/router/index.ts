@@ -15,9 +15,9 @@ const router = createRouter({
       component: () => import('../views/AboutView.vue'),
     },
     {
-      path: '/backpack',
-      name: 'backpack',
-      component: () => import('../views/Backpack.vue'),
+      path: '/routes',
+      name: 'routes',
+      component: () => import('../views/RouteView.vue'),
     },
   ],
 })

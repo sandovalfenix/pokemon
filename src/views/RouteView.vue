@@ -1,17 +1,28 @@
 <script setup lang="ts">
 import { useRoutesStore } from '@/stores/routes'
+import type { Trainer } from '@/types/route'
+import type { Pokemon } from '@/types/pokemon'
 import { storeToRefs } from 'pinia'
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 
 const routesStore = useRoutesStore()
-const {
-  currentRoute,
-  availableRoutes,
-  remainingTrainers,
-  isExploring,
-  steps,
-  currentEncounter,
-} = storeToRefs(routesStore)
+const { currentRoute, availableRoutes, remainingTrainers, steps, currentEncounter } =
+  storeToRefs(routesStore)
+
+// Computed properties tipadas para el encuentro actual
+const wildPokemonData = computed(() => {
+  if (currentEncounter.value?.type === 'wild') {
+    return currentEncounter.value.data as Pokemon
+  }
+  return null
+})
+
+const trainerData = computed(() => {
+  if (currentEncounter.value?.type === 'trainer') {
+    return currentEncounter.value.data as Trainer
+  }
+  return null
+})
 
 const { walk, travelTo, challengeTrainer, clearEncounter, defeatTrainer, unlockRoute } = routesStore
 
@@ -50,8 +61,8 @@ const handleFlee = () => {
 }
 
 const handleFight = () => {
-  if (currentEncounter.value?.type === 'trainer') {
-    const trainer = currentEncounter.value.data as any
+  if (currentEncounter.value?.type === 'trainer' && trainerData.value) {
+    const trainer = trainerData.value
     // Simular victoria por ahora
     defeatTrainer(trainer.id)
     walkMessage.value = `¡Derrotaste a ${trainer.name}! Ganaste $${trainer.reward}`
@@ -59,7 +70,7 @@ const handleFight = () => {
     // Desbloquear siguiente ruta si derrotaste todos los entrenadores
     if (remainingTrainers.value.length === 0 && currentRoute.value) {
       const nextRoute = currentRoute.value.connectedRoutes.find(
-        id => !routesStore.routes.find(r => r.id === id)?.unlocked
+        (id) => !routesStore.routes.find((r) => r.id === id)?.unlocked,
       )
       if (nextRoute) {
         unlockRoute(nextRoute)
@@ -153,37 +164,29 @@ const getRouteTypeClass = (type: string) => {
     <!-- Panel de encuentro -->
     <section v-if="currentEncounter" class="encounter-panel">
       <div class="encounter-content">
-        <template v-if="currentEncounter.type === 'wild'">
+        <template v-if="currentEncounter.type === 'wild' && wildPokemonData">
           <div class="encounter-icon wild">⚡</div>
           <h2>¡Pokémon Salvaje!</h2>
           <div class="encounter-pokemon">
-            <span class="pokemon-name">{{ (currentEncounter.data as any).name }}</span>
+            <span class="pokemon-name">{{ wildPokemonData.name }}</span>
             <div class="pokemon-stats">
-              <span>❤️ HP: {{ (currentEncounter.data as any).hp }}</span>
-              <span>⚔️ ATK: {{ (currentEncounter.data as any).attack }}</span>
-              <span>🛡️ DEF: {{ (currentEncounter.data as any).defense }}</span>
+              <span>❤️ HP: {{ wildPokemonData.hp }}</span>
+              <span>⚔️ ATK: {{ wildPokemonData.attack }}</span>
+              <span>🛡️ DEF: {{ wildPokemonData.defense }}</span>
             </div>
           </div>
         </template>
 
-        <template v-else>
+        <template v-else-if="trainerData">
           <div class="encounter-icon trainer">🎓</div>
-          <h2>{{ (currentEncounter.data as any).name }}</h2>
-          <p class="trainer-dialogue">"{{ (currentEncounter.data as any).dialogue.before }}"</p>
-          <div class="trainer-pokemon-count">
-            Pokémon: {{ (currentEncounter.data as any).pokemons.length }}
-          </div>
+          <h2>{{ trainerData.name }}</h2>
+          <p class="trainer-dialogue">"{{ trainerData.dialogue.before }}"</p>
+          <div class="trainer-pokemon-count">Pokémon: {{ trainerData.pokemons.length }}</div>
         </template>
 
         <div class="encounter-actions">
-          <button class="btn btn-fight" @click="handleFight">
-            ⚔️ Pelear
-          </button>
-          <button
-            v-if="currentEncounter.type === 'wild'"
-            class="btn btn-flee"
-            @click="handleFlee"
-          >
+          <button class="btn btn-fight" @click="handleFight">⚔️ Pelear</button>
+          <button v-if="currentEncounter.type === 'wild'" class="btn btn-flee" @click="handleFlee">
             🏃 Huir
           </button>
         </div>
@@ -218,9 +221,7 @@ const getRouteTypeClass = (type: string) => {
           <div class="trainer-avatar">🧑‍🎓</div>
           <div class="trainer-info">
             <span class="trainer-name">{{ trainer.name }}</span>
-            <span class="trainer-pokemon-count">
-              {{ trainer.pokemons.length }} Pokémon
-            </span>
+            <span class="trainer-pokemon-count"> {{ trainer.pokemons.length }} Pokémon </span>
             <span class="trainer-reward">💰 ${{ trainer.reward }}</span>
           </div>
         </div>
@@ -349,11 +350,26 @@ const getRouteTypeClass = (type: string) => {
   text-transform: uppercase;
 }
 
-.type-badge.grass { background: #4caf50; color: #fff; }
-.type-badge.forest { background: #2e7d32; color: #fff; }
-.type-badge.cave { background: #5d4e6d; color: #fff; }
-.type-badge.water { background: #2196f3; color: #fff; }
-.type-badge.city { background: #607d8b; color: #fff; }
+.type-badge.grass {
+  background: #4caf50;
+  color: #fff;
+}
+.type-badge.forest {
+  background: #2e7d32;
+  color: #fff;
+}
+.type-badge.cave {
+  background: #5d4e6d;
+  color: #fff;
+}
+.type-badge.water {
+  background: #2196f3;
+  color: #fff;
+}
+.type-badge.city {
+  background: #607d8b;
+  color: #fff;
+}
 
 /* Lista de Pokémon salvajes */
 .wild-pokemon-list {
@@ -423,12 +439,21 @@ const getRouteTypeClass = (type: string) => {
 }
 
 @keyframes pulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.1); }
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
 }
 
-.encounter-icon.wild { color: #ffd700; }
-.encounter-icon.trainer { color: #64b5f6; }
+.encounter-icon.wild {
+  color: #ffd700;
+}
+.encounter-icon.trainer {
+  color: #64b5f6;
+}
 
 .encounter-pokemon {
   background: rgba(255, 255, 255, 0.1);
@@ -520,8 +545,13 @@ const getRouteTypeClass = (type: string) => {
 }
 
 @keyframes walkingPulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.7; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
 }
 
 .btn-fight {

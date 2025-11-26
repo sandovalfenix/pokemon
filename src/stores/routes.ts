@@ -1,8 +1,8 @@
+import { routesData } from '@/data/routes'
 import type { Pokemon } from '@/types/pokemon'
 import type { Route, Trainer, WildEncounter } from '@/types/route'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
-import { routesData } from '@/data/routes'
 
 export const useRoutesStore = defineStore('routes', () => {
   // Estado

@@ -3,11 +3,12 @@ import { defineStore } from 'pinia'
 import { computed, ref, type Ref } from 'vue'
 
 export const useBattleStore = defineStore('battle', () => {
-  // my pokemons
-  const pokemons = ref([{ id: 1, name: 'Bulbasaur', hp: 10, attack: 44, defense: 49 }])
+  const teamStore = useTeamStore()
+  // my pokemons (now from team store)
+  // const pokemons = ref([{ id: 1, name: 'Bulbasaur', hp: 10, attack: 44, defense: 49 }])
 
   // opponent pokemons
-  const opponentPokemons = ref([{ id: 4, name: 'Charmander', hp: 10, attack: 52, defense: 43 }])
+  const opponentPokemons = ref<Pokemon[]>([{ id: 4, name: 'Charmander', hp: 10, attack: 52, defense: 43 }])
 
   const attacker = ref(true)
 
@@ -36,8 +37,7 @@ export const useBattleStore = defineStore('battle', () => {
     // if game is not over and it is now the opponent's turn, schedule their attack
     if (!gameOver.value && !attacker.value) {
       setTimeout(() => {
-        alert('Opponent is attacking!')
-        attackPokemon(opponentPokemons, pokemons)
+        attackPokemon(opponentPokemons, teamStore.pokemons)
       }, 1000)
     }
   }
@@ -56,5 +56,5 @@ export const useBattleStore = defineStore('battle', () => {
     return null
   })
 
-  return { pokemons, opponentPokemons, attacker, attackPokemon, gameOver, winner }
+  return { opponentPokemons, attacker, attackPokemon, gameOver, winner }
 })

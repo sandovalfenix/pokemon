@@ -1,20 +1,22 @@
-import { ref, computed } from 'vue'
+import type { Pokemon } from '@/types/pokemon'
 import { defineStore } from 'pinia'
+import { computed, ref, type Ref } from 'vue'
 
 export const useBattleStore = defineStore('battle', () => {
-  // my pokemons
-  const pokemons = ref([{ id: 1, name: 'Bulbasaur', hp: 10, attack: 44, defense: 49 }])
+  const teamStore = useTeamStore()
+  // my pokemons (now from team store)
+  // const pokemons = ref([{ id: 1, name: 'Bulbasaur', hp: 10, attack: 44, defense: 49 }])
 
   // opponent pokemons
-  const opponentPokemons = ref([{ id: 4, name: 'Charmander', hp: 10, attack: 52, defense: 43 }])
+  const opponentPokemons = ref<Pokemon[]>([{ id: 4, name: 'Charmander', hp: 10, attack: 52, defense: 43 }])
 
   const attacker = ref(true)
 
   // attack function
-  const attackPokemon = (pokemonAttack: any, pokemonDefense: any) => {
+  const attackPokemon = (pokemonAttack: Ref<Pokemon[]>, pokemonDefense: Ref<Pokemon[]>) => {
     // tolerate both: refs passed from script (have `.value`) and unwrapped arrays passed from templates
-    const attackArr = pokemonAttack && pokemonAttack.value ? pokemonAttack.value : pokemonAttack
-    const defendArr = pokemonDefense && pokemonDefense.value ? pokemonDefense.value : pokemonDefense
+    const attackArr: Pokemon[] = pokemonAttack && pokemonAttack.value ? pokemonAttack.value : pokemonAttack as unknown as Pokemon[]
+    const defendArr: Pokemon[] = pokemonDefense && pokemonDefense.value ? pokemonDefense.value : pokemonDefense as unknown as Pokemon[]
 
     // validate
     if (!attackArr || !defendArr || !attackArr[0] || !defendArr[0]) return
@@ -35,21 +37,24 @@ export const useBattleStore = defineStore('battle', () => {
     // if game is not over and it is now the opponent's turn, schedule their attack
     if (!gameOver.value && !attacker.value) {
       setTimeout(() => {
-        alert('Opponent is attacking!')
-        attackPokemon(opponentPokemons, pokemons)
+        attackPokemon(opponentPokemons, teamStore.pokemons)
       }, 1000)
     }
   }
 
   const gameOver = computed(() => {
-    return pokemons.value[0].hp <= 0 || opponentPokemons.value[0].hp <= 0
+    const myHp = pokemons.value[0]?.hp ?? 1
+    const oppHp = opponentPokemons.value[0]?.hp ?? 1
+    return myHp <= 0 || oppHp <= 0
   })
 
   const winner = computed(() => {
-    if (pokemons.value[0].hp <= 0) return 'opponent'
-    if (opponentPokemons.value[0].hp <= 0) return 'player'
+    const myHp = pokemons.value[0]?.hp ?? 1
+    const oppHp = opponentPokemons.value[0]?.hp ?? 1
+    if (myHp <= 0) return 'opponent'
+    if (oppHp <= 0) return 'player'
     return null
   })
 
-  return { pokemons, opponentPokemons, attacker, attackPokemon, gameOver, winner }
+  return { opponentPokemons, attacker, attackPokemon, gameOver, winner }
 })

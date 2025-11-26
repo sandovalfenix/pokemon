@@ -1,15 +1,44 @@
-<script setup>
+<script setup lang="ts">
 import { usePokemonStore } from '../stores/healing'
 import { ref } from 'vue'
+import healSound from '../assets/heal.mp3'
+
+const sound = new Audio(healSound)
 
 const store = usePokemonStore()
 const isHealing = ref(false)
 
+
 async function iniciarCuracion() {
+  if (isHealing.value) return
   isHealing.value = true
-  await store.curarPokemones()
+
+  // Inicia la curación (no await aún, la dejamos correr en background)
+  const healPromise = store.curarPokemones()
+
+  // Programa el sonido para 1 segundo después de empezar
+  const soundTimer = setTimeout(async () => {
+    try {
+      // Crear nueva instancia evita problemas si el audio ya fue reproducido antes
+      const s = new Audio(healSound)
+      s.currentTime = 0
+      await s.play() // Puede devolver una promesa que rechaza si el navegador lo bloquea
+    } catch (err) {
+      // Manejo silencioso: muestra un aviso en consola, pero la app sigue funcionando
+      console.warn('No se pudo reproducir el sonido:', err)
+    }
+  }, 500)
+
+  // Espera que termine la curación
+  await healPromise
+
+  // Si por alguna razón la curación terminó antes de que se dispare el sonido,
+  // limpiamos el timeout para que no intente reproducirlo después.
+  clearTimeout(soundTimer)
+
   isHealing.value = false
 }
+
 
 function getHealthColor(actual, max) {
   const percentage = (actual / max) * 100
@@ -105,7 +134,7 @@ function getHealthPercentage(actual, max) {
 .header {
   text-align: center;
   color: white;
-  margin-bottom: 3rem;
+  margin-bottom: 1rem;
   animation: slideDown 0.6s ease-out;
 }
 
@@ -121,15 +150,15 @@ function getHealthPercentage(actual, max) {
 }
 
 .header h1 {
-  font-size: 2.5rem;
+  font-size: 1.5rem;
   margin: 0;
   font-weight: 700;
   text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
 }
 
 .subtitle {
-  margin: 0.5rem 0 0 0;
-  font-size: 1.1rem;
+  margin: 0.3rem 0 0 0;
+  font-size: 0.8rem;
   opacity: 0.95;
   font-weight: 300;
 }
@@ -158,6 +187,8 @@ function getHealthPercentage(actual, max) {
   background: white;
   border-radius: 16px;
   padding: 1.5rem;
+  width: 250px;
+  cursor: pointer;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   animation: popIn 0.5s ease-out;
@@ -183,14 +214,14 @@ function getHealthPercentage(actual, max) {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.0rem;
   border-bottom: 2px solid #f3f4f6;
-  padding-bottom: 1rem;
+  padding-bottom: 0.5rem;
 }
 
 .card-header h3 {
   margin: 0;
-  font-size: 1.5rem;
+  font-size: 1.2rem;
   color: #1f2937;
   font-weight: 700;
 }
@@ -205,7 +236,7 @@ function getHealthPercentage(actual, max) {
 }
 
 .health-container {
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.0rem;
 }
 
 .health-bar-wrapper {
@@ -250,7 +281,7 @@ function getHealthPercentage(actual, max) {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  padding: 0.75rem;
+  padding: 0.4rem;
   background: #f9fafb;
   border-radius: 8px;
 }

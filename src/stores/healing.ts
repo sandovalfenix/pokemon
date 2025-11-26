@@ -21,7 +21,7 @@ export const usePokemonStore = defineStore('pokemon', () => {
         await new Promise(resolve => setTimeout(resolve, 1000))
 
         pokemons.value.forEach(p => {
-            const cantidadCura = p.vidaMax * 0.20
+            const cantidadCura = p.vidaMax * 0.34
             p.vidaActual = Math.min(p.vidaActual + cantidadCura, p.vidaMax)
         })
         }
